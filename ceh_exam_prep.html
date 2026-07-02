@@ -275,7 +275,7 @@ function runSession(opts){
     app.innerHTML = `
       <header class="top">
         <h1>${state.title}</h1>
-        <div class="stats-mini">${timeStr}</div>
+        <div class="stats-mini">${timeStr} <button class="link-btn" onclick="App.cancelSession()">✕ ยกเลิก/เริ่มใหม่</button></div>
       </header>
       <div class="card">
         ${renderTopBar(null, `ข้อ ${state.idx+1} / ${state.list.length}`, `<span class="topic-pill">${q.topic}</span>`)}
@@ -499,6 +499,13 @@ function showDataNotes(){
   `;
 }
 
+function cancelSession(){
+  if(confirm('ต้องการยกเลิกรอบนี้และกลับหน้าแรกหรือไม่? คำตอบที่ตอบไปแล้วในรอบนี้จะยังถูกบันทึกไว้')){
+    clearSession();
+    renderHome();
+  }
+}
+
 function resetProgress(){
   if(confirm('ต้องการล้างสถิติความคืบหน้าทั้งหมดหรือไม่?')){
     PROGRESS = {};
@@ -510,7 +517,7 @@ function resetProgress(){
 const App = {
   home: renderHome,
   showQuizSetup, startQuiz, startLearn, startExamSim, startWeakReview,
-  reviewMissed, showStats, showDataNotes, resetProgress,
+  reviewMissed, showStats, showDataNotes, resetProgress, cancelSession,
 };
 window.App = App;
 
