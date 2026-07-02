@@ -83,6 +83,8 @@ const QUESTIONS = [{"num": 1, "stem": "What technique is primarily used to escal
 
 const STORAGE_KEY = "ceh_quiz_progress_v1";
 const TOTAL = QUESTIONS.length;
+const Q_BY_NUM = {};
+QUESTIONS.forEach(q=>{ Q_BY_NUM[q.num] = q; });
 
 function loadProgress(){
   try{
@@ -95,6 +97,27 @@ function saveProgress(p){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
 }
 let PROGRESS = loadProgress();
+
+const SESSION_KEY = "ceh_quiz_session_v1";
+function saveSession(s){
+  try{
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      mode: s.mode, title: s.title, timeLimitSec: s.timeLimitSec,
+      startTime: s.startTime, idx: s.idx, answers: s.answers,
+      nums: s.list.map(q=>q.num)
+    }));
+  }catch(e){}
+}
+function loadSession(){
+  try{
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return null;
+}
+function clearSession(){
+  try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){}
+}
 
 function getRec(num){
   if(!PROGRESS[num]) PROGRESS[num] = {box:0, seen:0, correct:0, wrong:0, last:null};
@@ -223,15 +246,16 @@ function renderTopBar(container, label, extra){
 function runSession(opts){
   // opts: {questions, mode: 'learn'|'quiz'|'exam'|'weak', title, timeLimitSec}
   const state = {
-    idx: 0,
+    idx: opts.resume ? opts.resume.idx : 0,
     list: opts.questions,
     mode: opts.mode,
     title: opts.title,
-    answers: [], // {num, chosen, correct, isCorrect}
-    startTime: Date.now(),
+    answers: opts.resume ? opts.resume.answers.slice() : [], // {num, chosen, correct, isCorrect}
+    startTime: opts.resume ? opts.resume.startTime : Date.now(),
     timeLimitSec: opts.timeLimitSec || null,
     timerHandle: null,
   };
+  saveSession(state);
 
   function renderQuestion(){
     if(state.idx >= state.list.length){
@@ -312,6 +336,7 @@ function runSession(opts){
 
   function nextQuestion(){
     state.idx++;
+    saveSession(state);
     renderQuestion();
   }
 
@@ -326,6 +351,7 @@ function finishSession(state){
 }
 
 function renderSessionSummary(state){
+  clearSession();
   const total = state.answers.length;
   const correct = state.answers.filter(a=>a.isCorrect).length;
   const pct = total? Math.round(100*correct/total) : 0;
@@ -488,7 +514,24 @@ const App = {
 };
 window.App = App;
 
-renderHome();
+(function boot(){
+  const saved = loadSession();
+  if(saved){
+    const list = (saved.nums||[]).map(n=>Q_BY_NUM[n]).filter(Boolean);
+    if(list.length === saved.nums.length && saved.idx < list.length){
+      runSession({
+        questions: list,
+        mode: saved.mode,
+        title: saved.title,
+        timeLimitSec: saved.timeLimitSec,
+        resume: {idx: saved.idx, answers: saved.answers, startTime: saved.startTime}
+      });
+      return;
+    }
+    clearSession();
+  }
+  renderHome();
+})();
 })();
 </script>
 </body>
