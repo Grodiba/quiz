@@ -269,7 +269,7 @@ function runSession(opts){
       return renderSessionSummary(state);
     }
     const q = state.list[state.idx];
-    const letters = shuffle(['A','B','C','D']); // randomize on-screen order each time; letter badges still map to their original answer
+    const letters = ['A','B','C','D'];
     let timeStr = '';
     if(state.timeLimitSec){
       const elapsed = Math.floor((Date.now()-state.startTime)/1000);
